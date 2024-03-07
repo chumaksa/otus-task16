@@ -4,28 +4,83 @@
   hosts: logservers
   become: true
   tasks:
-  - name: Install the GPG (gnupg2)
-    ansible.builtin.apt:
-      name: gnupg2
-      update_cache: yes  
+#  - name: Install the GPG (gnupg2)
+#    ansible.builtin.apt:
+#      name: gnupg2
+#      update_cache: yes  
   
-  - name: Import the Elasticsearch GPG-KEY
-    ansible.builtin.shell: sudo rm /usr/share/keyrings/elasticsearch-keyring.gpg 2> /dev/null; wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+#  - name: Import the Elasticsearch GPG-KEY
+#    ansible.builtin.shell: sudo rm /usr/share/keyrings/elasticsearch-keyring.gpg 2> /dev/null; wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
       
-  - name: Install the apt-transport-https package
-    ansible.builtin.apt:
-      name: apt-transport-https
-      update_cache: yes
+#  - name: Install the apt-transport-https package
+#    ansible.builtin.apt:
+#      name: apt-transport-https
+#      update_cache: yes
 
-  - name: Save the repository definition to /etc/apt/sources.list.d/elastic-8.x.list
-    ansible.builtin.shell: echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
+#  - name: Save the repository definition to /etc/apt/sources.list.d/elastic-8.x.list
+#    ansible.builtin.shell: echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
       
-  - name: Install the Elasticsearch
-    ansible.builtin.apt:
-      name: elasticsearch
-      update_cache: yes
+#  - name: Install the Elasticsearch
+#    ansible.builtin.apt:
+#      name: elasticsearch
+#      update_cache: yes
 
-  - name: Install the Kibana
-    ansible.builtin.apt:
-      name: kibana
-      update_cache: yes      
+  - name: Copy elasticsearch config file to client
+    ansible.builtin.copy:
+      src: elasticsearch.yml
+      dest: /etc/elasticsearch/elasticsearch.yml
+
+#  - name: Install the python3-pexpect
+#    ansible.builtin.apt:
+#      name: python3-pexpect
+#      update_cache: yes
+
+  - name: Change password for elastic user
+    ansible.builtin.expect:
+      command: sudo /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -ib
+      responses:
+        (?i)password: "Otus1234!"
+    no_log: true 
+    tags:
+      - elasticpass	     
+
+  - name: Make sure a service unit elasticsearch.service is running
+    ansible.builtin.systemd_service:
+      name: elasticsearch.service 
+      state: restarted
+      enabled: yes 
+
+#  - name: Install the Kibana
+#    ansible.builtin.apt:
+#      name: kibana
+#      update_cache: yes  
+
+  - name: Copy certs
+    ansible.builtin.shell: sudo cp -R /etc/elasticsearch/certs /etc/kibana; sudo chown -R root:kibana /etc/kibana/certs
+    tags: 
+      - copycerts
+
+  - name: Copy kibana config file to client
+    ansible.builtin.copy:
+      src: kibana.yml
+      dest: /etc/kibana/kibana.yml
+      
+  - name: Change password for kibana_system user
+    ansible.builtin.expect:
+      command: /usr/share/elasticsearch/bin/elasticsearch-reset-password -u kibana_system -ib
+      responses:
+        (?i)password: "Otus1234!"
+    no_log: true 
+    tags:
+      - kibanapass
+
+  - name: Make sure a service unit kibana.service is running
+    ansible.builtin.systemd_service:
+      name: kibana.service 
+      state: restarted
+      enabled: yes 
+ 
+          
+          
+          
+          

@@ -1,0 +1,22 @@
+---
+# UTILS
+- name: Configure logservers (UTILS)
+  hosts: logservers
+  become: true
+  tasks:
+  - name: Specifying a destination path
+    ansible.builtin.fetch:
+      src: /etc/elasticsearch/elasticsearch.yml
+      dest: files/
+      flat: yes
+    tags: tag1   
+ 
+  - name: Specifying a destination path
+    ansible.builtin.fetch:
+      src: /etc/kibana/kibana.yml
+      dest: files/
+      flat: yes
+    tags: tag2  
+ 
+ 
+ 
