@@ -9,3 +9,23 @@
       name: nginx
       update_cache: yes
 
+  - name: Copy filebeat .dep package to client
+    ansible.builtin.copy:
+      src: ./debs/filebeat-8.12.2-amd64.deb
+      dest: /tmp/filebeat-8.12.2-amd64.deb
+
+  - name: Install the filebeat .deb package
+    ansible.builtin.apt:
+      deb: /tmp/filebeat-8.12.2-amd64.deb
+      
+  - name: Copy filebeat config file to client
+    ansible.builtin.copy:
+      src: filebeat.yml
+      dest: /etc/filebeat/filebeat.yml 
+
+  - name: Make sure a service unit filebeatservice is running
+    ansible.builtin.systemd_service:
+      name: filebeat.service 
+      state: restarted
+      enabled: yes
+
